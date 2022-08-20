@@ -1,6 +1,6 @@
 from typing import Dict, Any, List
 from model.GameStatsModel import ParticipantInfo, Info, TeamInfo, GameStatsModel
-from model.TeamPositionModel import TeamPosition
+from model.TeamPositionEnum import TeamPosition
 
 
 class DataRetriever:

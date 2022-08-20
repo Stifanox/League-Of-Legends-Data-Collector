@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import List
-from model.TeamPositionModel import TeamPosition
+from model.TeamPositionEnum import TeamPosition
 
 
 @dataclass

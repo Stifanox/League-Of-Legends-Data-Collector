@@ -1,9 +1,8 @@
 import requests as r
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Set
 from utils.DateFormatter import DateFormatter
 from .utils.RiotApiRequestHandler import RiotApiRequestHandler
 import constants.Config as Config
-from model.SummonerInfoModel import SummonerInfoModel
 
 
 class LeagueApiController:
@@ -18,7 +17,7 @@ class LeagueApiController:
 
     def getSummonerInfo(self, summonerName: str) -> Dict[str, Any]:
         """
-        Make get request for /lol/summoner/v4/summoner/by-name/[summonerName] and returns information for given summoner.
+        Makes get request for /lol/summoner/v4/summoner/by-name/[summonerName] and returns information for given summoner.
         
         :param summonerName: Name of the summoner to search for.
         :return: Information of summoner.
@@ -27,12 +26,12 @@ class LeagueApiController:
             url=f"https://eun1.api.riotgames.com/lol/summoner/v4/summoners/by-name/{summonerName}",
             apiKey=self.__API_KEY
         )
-        summonerInfo: SummonerInfoModel = summonerInfoResponse.json()
+        summonerInfo = summonerInfoResponse.json()
         return summonerInfo
 
-    def getMatchesFromPuuid(self, puuid: str, startDate: str = DateFormatter.getLastMonthInSec(), count: int = 100) -> List[str]:
+    def getMatchCodesFromPuuid(self, puuid: str, startDate: str = DateFormatter.getLastMonthInSec(), count: int = 100) -> Set[str]:
         """
-        Make get request for /lol/match/v5/matches/by-puuid/[puuid]/ids and returns list of codes for given puuid.
+        Makes get request for /lol/match/v5/matches/by-puuid/[puuid]/ids and returns list of codes for given puuid.
 
         :param puuid: Individual id of the summoner.
         :param startDate: Date from which search will begin. Default value is from 4 month prior to today.
@@ -53,11 +52,12 @@ class LeagueApiController:
             }
         )
         listOfCodes: List[str] = listOfCodesResponse.json()
-        return listOfCodes
+        setOfCodes: Set[str] = set(listOfCodes)
+        return setOfCodes
 
     def getMatchInfoFromCode(self, matchCode: str) -> Dict[str, Any]:
         """
-        Make get request for /lol/match/v5/matches/[matchCode] to get information for given match code.
+        Makes get request for /lol/match/v5/matches/[matchCode] to get information for given match code.
 
         :param matchCode: Code of match. Contains indicator of the region, followed by underscore than by numeric ID.
         :return: Object of a match information.

@@ -11,6 +11,7 @@
     <option name="namespacePackageFolders">
       <list>
         <option value="$MODULE_DIR$/remote" />
+        <option value="$MODULE_DIR$/data_collector" />
       </list>
     </option>
   </component>
