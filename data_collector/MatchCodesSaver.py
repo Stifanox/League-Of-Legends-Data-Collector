@@ -2,7 +2,7 @@ import os.path
 from typing import Set, TextIO
 
 
-class MatchCodesHandler:
+class MatchCodesSaver:
     __fileToSaveMatchCodes: TextIO
 
     def __init__(self):

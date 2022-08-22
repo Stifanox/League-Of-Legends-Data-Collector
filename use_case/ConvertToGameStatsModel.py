@@ -6,11 +6,11 @@ from model.TeamPositionEnum import TeamPosition
 class DataRetriever:
 
     @staticmethod
-    def __determineTeamPosition(position: str) -> TeamPosition:
-        positionType = TeamPosition.TOP
+    def __determineTeamPosition(position: str) -> str:
+        positionType = TeamPosition.TOP.name
         for teamPosition in TeamPosition:
             if teamPosition.name == position:
-                positionType = teamPosition
+                positionType = teamPosition.name
                 break
         return positionType
 
@@ -51,7 +51,8 @@ class DataRetriever:
         listTeamInfo: List[TeamInfo] = []
         for team in teamInfoList:
             listTeamInfo.append(
-                TeamInfo(kills=team["objectives"]["champion"]["kills"], teamId=team["teamId"], win=team["win"]))
+                TeamInfo(kills=team["objectives"]["champion"]["kills"], teamId=team["teamId"], win=team["win"])
+            )
 
         return listTeamInfo
 

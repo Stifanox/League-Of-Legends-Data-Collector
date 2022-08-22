@@ -1,3 +1,4 @@
+import time
 import urllib.parse
 import requests as r
 from typing import Dict
@@ -22,8 +23,13 @@ class RiotApiRequestHandler:
             attachedParameters += f"&{key}={item}"
         encodedUrl = RiotApiRequestHandler.encodeURL(f"{url}?api_key={apiKey}{attachedParameters}")
         response = r.get(encodedUrl)
-        if response.status_code == 401 or response.status_code == 403:
+        if response.status_code == 401:
             raise r.exceptions.HTTPError("Not authorised. Check if your API key is correct and if it's not expired")
+        elif response.status_code == 429:
+            print("Rate limit exceeded. Waiting 2 minutes until making new request")
+            time.sleep(122)
+            response = RiotApiRequestHandler.get(url, apiKey, params)
+
         return response
 
     @staticmethod

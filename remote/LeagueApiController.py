@@ -58,6 +58,7 @@ class LeagueApiController:
     def getMatchInfoFromCode(self, matchCode: str) -> Dict[str, Any]:
         """
         Makes get request for /lol/match/v5/matches/[matchCode] to get information for given match code.
+        Also makes get request for /lol/league/v4/entries/by-summoner/[encryptedSummonerId] to map puuid to league tier.
 
         :param matchCode: Code of match. Contains indicator of the region, followed by underscore than by numeric ID.
         :return: Object of a match information.

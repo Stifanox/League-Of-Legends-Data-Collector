@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from typing import List
-from model.TeamPositionEnum import TeamPosition
 
 
 @dataclass
@@ -30,7 +29,7 @@ class ParticipantInfo:
     goldEarned: int
     magicDamageDealtToChampions: int
     physicalDamageDealtToChampions: int
-    teamPosition: TeamPosition
+    teamPosition: str
     totalDamageDealtToChampions: int
     trueDamageDealtToChampions: int
     visionScore: int

@@ -1,15 +1,12 @@
-import dataclasses
-
-from model.GameStatsModel import GameStatsModel
 from data_collector.DataCollector import DataCollector
-from data_collector.MatchCodesHandler import MatchCodesHandler
+from data_collector.MatchCodesSaver import MatchCodesSaver
 from remote.LeagueApiController import LeagueApiController
 
-# TODO: zrobić dekorator dla dataclass
+
 if __name__ == '__main__':
-    saver = MatchCodesHandler()
+    saver = MatchCodesSaver()
     controller = LeagueApiController()
-    collector = DataCollector()
+    collector = DataCollector(2)
 
     collector.startCollector("stifano")
 
