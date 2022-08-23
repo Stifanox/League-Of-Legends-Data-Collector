@@ -15,7 +15,7 @@ class LeagueApiController:
     def __init__(self):
         self.__API_KEY = Config.RIOT_API
 
-    def getSummonerInfo(self, summonerName: str) -> Dict[str, Any]:
+    def getSummonerInfoByName(self, summonerName: str) -> Dict[str, Any]:
         """
         Makes get request for /lol/summoner/v4/summoner/by-name/[summonerName] and returns information for given summoner.
         
@@ -58,7 +58,6 @@ class LeagueApiController:
     def getMatchInfoFromCode(self, matchCode: str) -> Dict[str, Any]:
         """
         Makes get request for /lol/match/v5/matches/[matchCode] to get information for given match code.
-        Also makes get request for /lol/league/v4/entries/by-summoner/[encryptedSummonerId] to map puuid to league tier.
 
         :param matchCode: Code of match. Contains indicator of the region, followed by underscore than by numeric ID.
         :return: Object of a match information.
@@ -71,3 +70,25 @@ class LeagueApiController:
         # TODO: zmienić nazwę obiektu dla riotu
         bullshitObject = response.json()
         return bullshitObject
+
+    def getSummonerInfoByPuuid(self, puuid: str) -> Dict[str, Any]:
+        summonerInfoResponse: r.Response = RiotApiRequestHandler.get(
+            url=f"https://eun1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}",
+            apiKey=self.__API_KEY
+        )
+        summonerInfo = summonerInfoResponse.json()
+        return summonerInfo
+
+    def getPlayerTierFromId(self, summonerId: str) -> Dict[str, Any]:
+        queueListDto: r.Response = RiotApiRequestHandler.get(
+            url=f"https://eun1.api.riotgames.com/lol/league/v4/entries/by-summoner/{summonerId}",
+            apiKey=self.__API_KEY
+        )
+        queueList = queueListDto.json()
+        soloQueueObject = dict()
+        for queue in queueList:
+            if queue["queueType"] == "RANKED_SOLO_5x5":
+                soloQueueObject = queue
+                break
+        return soloQueueObject
+

@@ -7,6 +7,7 @@ from model.GameStatsModel import GameStatsModel
 from use_case.ConvertToSummonerInfoModel import ConvertToSummonerInfoModel
 from .MatchCodesSaver import MatchCodesSaver
 from .MatchDataSaver import MatchDataSaver
+from use_case.GetPlayersTier import GetPlayersTier
 
 # TODO: zrobić dekorator timera dla debuggera
 # TODO: dodać dokumentację
@@ -20,14 +21,16 @@ class DataCollector:
     __matchCodesSaver: MatchCodesSaver
     __matchDataSaver: MatchDataSaver
     __lastPuuid: str
+    __withTier: bool
 
-    def __init__(self, cycles: int):
+    def __init__(self, cycles: int, withTier: bool):
         self.__apiController: LeagueApiController = LeagueApiController()
         self.__matchCodesSaver: MatchCodesSaver = MatchCodesSaver()
         self.__matchDataSaver: MatchDataSaver = MatchDataSaver()
         self.__codesUsed: Set[str] = self.__matchCodesSaver.importCodes()
         self.__lastPuuid = ""
         self.__maxCycle = cycles
+        self.__withTier = withTier
 
     def startCollector(self, summonerName: str):
         """
@@ -36,7 +39,7 @@ class DataCollector:
         :param summonerName: Summoner name to start collecting data from.
         """
         print(f"Starting collecting data, amount cycle left: {self.__maxCycle}")
-        summonerInfoDto: Dict[str, Any] = self.__apiController.getSummonerInfo(summonerName)
+        summonerInfoDto: Dict[str, Any] = self.__apiController.getSummonerInfoByName(summonerName)
         summonerInfo = ConvertToSummonerInfoModel(summonerInfoDto)
         codes = self.__apiController.getMatchCodesFromPuuid(summonerInfo.puuid)
         self.__cycleAllCodes(codes)
@@ -70,7 +73,10 @@ class DataCollector:
         :return: :class: `GameStatsModel` object
         """
         matchInfo: Dict[str, Any] = self.__apiController.getMatchInfoFromCode(code)
-        usefulInfo: GameStatsModel = ConvertToGameStatsModel(matchInfo)
+        playersTierMapper = dict()
+        if self.__withTier:
+            playersTierMapper: Dict[str, str] = GetPlayersTier(matchInfo["metadata"]["participants"])
+        usefulInfo: GameStatsModel = ConvertToGameStatsModel(matchInfo, playersTierMapper)
         return usefulInfo
 
     def __chooseNewPlayer(self, listOfParticipants: List[str]):

@@ -6,7 +6,7 @@ from remote.LeagueApiController import LeagueApiController
 if __name__ == '__main__':
     saver = MatchCodesSaver()
     controller = LeagueApiController()
-    collector = DataCollector(2)
+    collector = DataCollector(cycles=10, withTier=False)
 
     collector.startCollector("stifano")
 

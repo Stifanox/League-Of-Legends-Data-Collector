@@ -38,7 +38,7 @@ class ParticipantInfo:
     visionWardsBoughtInGame: int
     totalMinionsKilled: int
     teamId: int
-
+    tier: str
 
 @dataclass
 class Info:

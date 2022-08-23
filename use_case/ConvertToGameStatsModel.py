@@ -6,6 +6,13 @@ from model.TeamPositionEnum import TeamPosition
 class DataRetriever:
 
     @staticmethod
+    def __determineTier(playerPuuid: str, playersTierMapper: Dict[str, str]) -> str:
+        if len(playersTierMapper) == 0:
+            return "UNSPECIFIED"
+        else:
+            return playersTierMapper[playerPuuid]
+
+    @staticmethod
     def __determineTeamPosition(position: str) -> str:
         positionType = TeamPosition.TOP.name
         for teamPosition in TeamPosition:
@@ -15,7 +22,7 @@ class DataRetriever:
         return positionType
 
     @staticmethod
-    def __createParticipantInfo(player: Dict[str, Any]) -> ParticipantInfo:
+    def __createParticipantInfo(player: Dict[str, Any], playersTierMapper: Dict[str, str]) -> ParticipantInfo:
         return ParticipantInfo(
             assists=player["assists"],
             deaths=player["deaths"],
@@ -31,14 +38,15 @@ class DataRetriever:
             wardsPlaced=player["wardsPlaced"],
             visionWardsBoughtInGame=player["visionWardsBoughtInGame"],
             totalMinionsKilled=player["totalMinionsKilled"],
-            teamId=player["teamId"]
+            teamId=player["teamId"],
+            tier=DataRetriever.__determineTier(player["puuid"], playersTierMapper)
         )
 
     @staticmethod
-    def createParticipantsInfoList(listOfPlayers: List[Dict[str, Any]]) -> List[ParticipantInfo]:
+    def createParticipantsInfoList(listOfPlayers: List[Dict[str, Any]], playersTierMapper: Dict[str, str]) -> List[ParticipantInfo]:
         participantsList: List[ParticipantInfo] = []
         for player in listOfPlayers:
-            participantsList.append(DataRetriever.__createParticipantInfo(player))
+            participantsList.append(DataRetriever.__createParticipantInfo(player, playersTierMapper))
 
         return participantsList
 
@@ -61,9 +69,9 @@ class DataRetriever:
         return GameStatsModel(participants=participants, info=info, teamsInfo=teamsInfo)
 
 
-def ConvertToGameStatsModel(responseObject: Dict[str, Any]) -> GameStatsModel:
+def ConvertToGameStatsModel(responseObject: Dict[str, Any], playersTierMapper: Dict[str, str]) -> GameStatsModel:
     participantsInfoListDto: List[Dict[str, Any]] = responseObject["info"]["participants"]
-    participantsInfoList = DataRetriever.createParticipantsInfoList(participantsInfoListDto)
+    participantsInfoList = DataRetriever.createParticipantsInfoList(participantsInfoListDto, playersTierMapper)
 
     infoObject = DataRetriever.createInfo(responseObject["info"]["gameDuration"], participantsInfoList)
 
