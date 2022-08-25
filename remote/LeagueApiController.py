@@ -68,10 +68,16 @@ class LeagueApiController:
             apiKey=self.__API_KEY
         )
         # TODO: zmienić nazwę obiektu dla riotu
-        bullshitObject = response.json()
-        return bullshitObject
+        bigObject = response.json()
+        return bigObject
 
     def getSummonerInfoByPuuid(self, puuid: str) -> Dict[str, Any]:
+        """
+        Makes get request for /lol/summoner/v4/summoners/by-puuid/[encryptedPUUID] to get information about summoner.
+
+        :param puuid: Summoner puuid.
+        :return: Information of summoner.
+        """
         summonerInfoResponse: r.Response = RiotApiRequestHandler.get(
             url=f"https://eun1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}",
             apiKey=self.__API_KEY
@@ -80,6 +86,12 @@ class LeagueApiController:
         return summonerInfo
 
     def getPlayerTierFromId(self, summonerId: str) -> Dict[str, Any]:
+        """
+        Makes get request for /league/v4/entries/by-summoner/[summonerId] to get players tier.
+
+        :param summonerId: Summoner id.
+        :return: Information of players tier on solo queue.
+        """
         queueListDto: r.Response = RiotApiRequestHandler.get(
             url=f"https://eun1.api.riotgames.com/lol/league/v4/entries/by-summoner/{summonerId}",
             apiKey=self.__API_KEY

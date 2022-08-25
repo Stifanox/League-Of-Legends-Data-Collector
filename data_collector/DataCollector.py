@@ -9,11 +9,10 @@ from .MatchCodesSaver import MatchCodesSaver
 from .MatchDataSaver import MatchDataSaver
 from use_case.GetPlayersTier import GetPlayersTier
 
-# TODO: zrobić dekorator timera dla debuggera
-# TODO: dodać dokumentację
+
 class DataCollector:
     """
-    Class responsible for collecting and saving data from matches. The class is collecting data until [to be specified xd]
+    Class responsible for collecting and saving data from matches. The class is collecting data until cycle counter is 0.
     """
 
     __apiController: LeagueApiController
@@ -22,8 +21,8 @@ class DataCollector:
     __matchDataSaver: MatchDataSaver
     __lastPuuid: str
     __withTier: bool
-
-    def __init__(self, cycles: int, withTier: bool):
+    __count: int
+    def __init__(self, cycles: int, withTier: bool,count: int):
         self.__apiController: LeagueApiController = LeagueApiController()
         self.__matchCodesSaver: MatchCodesSaver = MatchCodesSaver()
         self.__matchDataSaver: MatchDataSaver = MatchDataSaver()
@@ -31,6 +30,7 @@ class DataCollector:
         self.__lastPuuid = ""
         self.__maxCycle = cycles
         self.__withTier = withTier
+        self.__count = count
 
     def startCollector(self, summonerName: str):
         """
@@ -41,7 +41,7 @@ class DataCollector:
         print(f"Starting collecting data, amount cycle left: {self.__maxCycle}")
         summonerInfoDto: Dict[str, Any] = self.__apiController.getSummonerInfoByName(summonerName)
         summonerInfo = ConvertToSummonerInfoModel(summonerInfoDto)
-        codes = self.__apiController.getMatchCodesFromPuuid(summonerInfo.puuid)
+        codes = self.__apiController.getMatchCodesFromPuuid(summonerInfo.puuid, count=self.__count)
         self.__cycleAllCodes(codes)
 
     def __cycleAllCodes(self, listOfCodes: Set[str]):
@@ -80,6 +80,11 @@ class DataCollector:
         return usefulInfo
 
     def __chooseNewPlayer(self, listOfParticipants: List[str]):
+        """
+        Chooses a new player to get matches from. Player is chosen randomly but can't be the same player as the previous from which matches was collected.
+
+        :param listOfParticipants:
+        """
         self.__maxCycle -= 1
         print(f"Amount cycle remaining: {self.__maxCycle}")
 
@@ -91,7 +96,7 @@ class DataCollector:
             playerChosen = listOfParticipants[random.randint(0, len(listOfParticipants) - 1)]
         print(f"Player chosen: {playerChosen}")
         self.__lastPuuid = playerChosen
-        codes = self.__apiController.getMatchCodesFromPuuid(playerChosen)
+        codes = self.__apiController.getMatchCodesFromPuuid(playerChosen, count=self.__count)
         self.__cycleAllCodes(codes)
 
     def __saveCodesToFile(self):

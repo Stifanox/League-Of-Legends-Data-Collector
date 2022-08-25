@@ -70,6 +70,13 @@ class DataRetriever:
 
 
 def ConvertToGameStatsModel(responseObject: Dict[str, Any], playersTierMapper: Dict[str, str]) -> GameStatsModel:
+    """
+    Convert object from Riot API response to dataclass.
+
+    :param responseObject: Response object from Riot API from match-v5.
+    :param playersTierMapper: If collector is run on withTier flag set on true list of players tiers as dictionary as {puuid: tier}.
+    :return: GameStatsModel
+    """
     participantsInfoListDto: List[Dict[str, Any]] = responseObject["info"]["participants"]
     participantsInfoList = DataRetriever.createParticipantsInfoList(participantsInfoListDto, playersTierMapper)
 

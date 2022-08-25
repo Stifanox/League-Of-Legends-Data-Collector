@@ -4,7 +4,7 @@ from model.GameStatsModel import GameStatsModel
 import os
 import json
 
-# TODO: zrobić dokumentację
+
 class MatchDataSaver:
     __fileToSaveData: TextIO
 
@@ -13,6 +13,11 @@ class MatchDataSaver:
         self.__ROOT_DIR = os.path.abspath(os.curdir)
 
     def saveData(self, data: List[GameStatsModel]):
+        """
+        Makes string from list of GameStatsModel and saves it to file.
+
+        :param data: List of GameStatsModel
+        """
         self.__openFile("a")
         for game in data:
             # Convert dataclass to dictionary
