@@ -1,7 +1,9 @@
+import time
 from typing import List, Dict
 from remote.LeagueApiController import LeagueApiController
 from use_case.ConvertToSummonerInfoModel import ConvertToSummonerInfoModel
 from model.SummonerInfoModel import SummonerInfoModel
+from alive_progress import alive_bar
 
 
 def GetPlayersTier(playerList: List[str]) -> Dict[str, str]:
@@ -13,13 +15,17 @@ def GetPlayersTier(playerList: List[str]) -> Dict[str, str]:
     """
     apiController = LeagueApiController()
     listOfTiers = dict()
-    for playerId in playerList:
-        summonerInfoDto = apiController.getSummonerInfoByPuuid(playerId)
-        summonerInfo: SummonerInfoModel = ConvertToSummonerInfoModel(summonerInfoDto)
-        tierInfo = apiController.getPlayerTierFromId(summonerInfo.id)
-        try:
-            listOfTiers[summonerInfo.puuid] = tierInfo["tier"]
-        except KeyError:
-            print(f"Player doesn't have tier in solo queue: {summonerInfo.name}")
-            listOfTiers[summonerInfo.puuid] = "UNSPECIFIED"
+    with alive_bar(10) as bar:
+        for i, playerId in enumerate(playerList):
+
+            summonerInfoDto = apiController.getSummonerInfoByPuuid(playerId)
+            summonerInfo: SummonerInfoModel = ConvertToSummonerInfoModel(summonerInfoDto)
+            tierInfo = apiController.getPlayerTierFromId(summonerInfo.id)
+
+            try:
+                listOfTiers[summonerInfo.puuid] = tierInfo["tier"]
+            except KeyError:
+                print(f"Player doesn't have tier in solo queue: {summonerInfo.name}")
+                listOfTiers[summonerInfo.puuid] = "UNSPECIFIED"
+            bar()
     return listOfTiers

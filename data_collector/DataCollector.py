@@ -22,7 +22,8 @@ class DataCollector:
     __lastPuuid: str
     __withTier: bool
     __count: int
-    def __init__(self, cycles: int, withTier: bool,count: int):
+
+    def __init__(self, cycles: int, withTier: bool, count: int = 100):
         self.__apiController: LeagueApiController = LeagueApiController()
         self.__matchCodesSaver: MatchCodesSaver = MatchCodesSaver()
         self.__matchDataSaver: MatchDataSaver = MatchDataSaver()
