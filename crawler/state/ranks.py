@@ -13,10 +13,17 @@ QUEUE_ADD = """
     VALUES (:platform_id, :puuid, :now)
 """
 
-QUEUE_LIST = """
+QUEUE_LIST_OLDEST = """
     SELECT puuid FROM rank_queue
     WHERE platform_id = :platform_id
     ORDER BY enqueued_at, rowid
+    LIMIT :limit
+"""
+
+QUEUE_LIST_NEWEST = """
+    SELECT puuid FROM rank_queue
+    WHERE platform_id = :platform_id
+    ORDER BY enqueued_at DESC, rowid
     LIMIT :limit
 """
 
@@ -50,9 +57,10 @@ class RankQueue:
         with self._db.transaction():
             return self._db.execute_many(QUEUE_ADD, [{"platform_id": platform_id, "puuid": p, "now": now} for p in puuids])
 
-    def next(self, platform_id: str, limit: int = 100) -> list[str]:
-        """Oldest queued players first."""
-        return [row[0] for row in self._db.all(QUEUE_LIST, {"platform_id": platform_id, "limit": limit})]
+    def next(self, platform_id: str, limit: int = 100, *, newest_first: bool = False) -> list[str]:
+        """Queued players, oldest first (or newest first: the most recent matches' participants)."""
+        sql = QUEUE_LIST_NEWEST if newest_first else QUEUE_LIST_OLDEST
+        return [row[0] for row in self._db.all(sql, {"platform_id": platform_id, "limit": limit})]
 
     def remove(self, platform_id: str, puuid: str) -> None:
         self._db.execute(QUEUE_REMOVE, {"platform_id": platform_id, "puuid": puuid})

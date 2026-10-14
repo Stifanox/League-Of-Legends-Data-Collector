@@ -21,6 +21,7 @@ def test_defaults_with_only_key(write_env):
     assert s.split_reset_date is None
     assert s.fetch_timelines is True
     assert s.matches_per_player == 5
+    assert s.crawl_mode == "full"
     assert s.strategy == "stratified"
     assert s.seed_riot_id is None
     assert s.rank_reuse_hours == 6
@@ -105,6 +106,7 @@ def test_missing_file_uses_environment(tmp_path, monkeypatch):
         ({"RIOT_API_KEY": KEY, "REGIONS": "eun1,xx9"}, "unknown platform(s) xx9"),
         ({"RIOT_API_KEY": KEY, "REGIONS": ",,"}, "at least one platform"),
         ({"RIOT_API_KEY": KEY, "STRATEGY": "random"}, "STRATEGY must be one of"),
+        ({"RIOT_API_KEY": KEY, "CRAWL_MODE": "turbo"}, "CRAWL_MODE must be one of"),
         ({"RIOT_API_KEY": KEY, "STRATEGY": "snowball"}, "requires SEED_RIOT_ID"),
         ({"RIOT_API_KEY": KEY, "SEED_RIOT_ID": "NoTag"}, "GameName#TAG"),
         ({"RIOT_API_KEY": KEY, "FETCH_TIMELINES": "maybe"}, "FETCH_TIMELINES must be true or false"),

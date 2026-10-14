@@ -49,6 +49,7 @@ Implementation is split into phases in [`phases/`](phases/); future ideas that a
 | `SPLIT_RESET_DATE` | empty | ISO date of the last ranked reset; warn if the window starts before it |
 | `FETCH_TIMELINES` | `true` | Fetch `/timeline` for every match |
 | `MATCHES_PER_PLAYER` | `5` | K — match IDs taken per seed player per visit |
+| `CRAWL_MODE` | `full` | `full`, `matches-only` or `ranks-only` (§8 Crawl modes); `crawl --mode` overrides it |
 | `STRATEGY` | `stratified` | `stratified` or `snowball` |
 | `SEED_RIOT_ID` | empty | `GameName#TAG`, start point for `snowball` |
 | `RANK_REUSE_HOURS` | `6` | Reuse a player's rank lookup within this time |
@@ -129,6 +130,16 @@ Logging: console shows a progress bar and a compact status line (per-region requ
 6. **Apex fallback:** when every apex player of a tier has been seeded once, revisit them and page deeper (`start += K`) still inside the window. When no player yields new in-window matches, mark the tier **exhausted** for that region. A page of a non-apex tier that is empty also counts towards exhaustion for that division.
 
 **Optional strategy — snowball:** `STRATEGY=snowball` + `SEED_RIOT_ID=Name#TAG` → account-v1 for the PUUID, then repeatedly pick an unvisited participant from collected matches. Same pipeline, same storage. `seed_tier` is empty.
+
+**Crawl modes** (`CRAWL_MODE`, `crawl --mode`):
+
+| Mode | Workers | Use |
+|---|---|---|
+| `full` | match + rank worker per platform, in parallel | default; ranks looked up soon after the game (small `rank_lag_hours`) |
+| `matches-only` | match worker only; participants are still put in the rank queue | collect matches without rank lookups |
+| `ranks-only` | rank worker only; no new players or matches | work off the saved rank queue later (larger lag) |
+
+Throughput (dev key, measured in phase 4 smoke tests): a match needs ~2.3 regional requests (match, timeline, share of ids) → ~0.36 matches/s per region; ranks need ~10 platform requests per match but only ~0.8/s are available. In `full` mode roughly 20–25 % of participants get a rank; the queue is worked **newest first**, so ranks exist for the most recent matches with small lag and the rest stays queued for `ranks-only`. Match and rank calls use different hosts (regional vs platform), so `matches-only` collects about as many matches as `full`; seeding shares the platform host with ranks and may wait slightly longer in `full`.
 
 **Ranks:**
 - For each participant of every fetched match, look up `league-v4/entries/by-puuid` unless the same player was looked up within `RANK_REUSE_HOURS`.
@@ -227,3 +238,4 @@ Every phase delivers:
 | Q18 | `run.sh` + `systemd-inhibit`; no systemd unit / tmux |
 | Q19 | pytest + smoke test per phase + user review |
 | Q20 | Docs in `docs/`; phases 0–6 |
+| Q21 | Crawl modes `full` / `matches-only` / `ranks-only` (`CRAWL_MODE`, `--mode`); rank queue newest first |

@@ -51,6 +51,11 @@ MARK_VISITED = """
     WHERE platform_id = :platform_id AND puuid = :puuid
 """
 
+RESET_VISIT = """
+    UPDATE players SET visited_at = NULL, exhausted = 0
+    WHERE platform_id = :platform_id AND puuid = :puuid
+"""
+
 COUNT = """
     SELECT COUNT(*) FROM players
     WHERE platform_id = :platform_id
@@ -110,6 +115,10 @@ class Players:
             "now": self._db.clock(),
         }
         self._db.execute(MARK_VISITED, params)
+
+    def reset_visit(self, platform_id: str, puuid: str) -> None:
+        """Make a player pickable again (retry after a parked match-id lookup); the offset is kept."""
+        self._db.execute(RESET_VISIT, {"platform_id": platform_id, "puuid": puuid})
 
     def count(self, platform_id: str, tier: str | None = None, *, unvisited: bool = False) -> int:
         return self._db.scalar(COUNT, {"platform_id": platform_id, "tier": tier, "unvisited": int(unvisited)})

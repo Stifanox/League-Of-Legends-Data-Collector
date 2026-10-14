@@ -14,12 +14,13 @@ def reload_key(env_file: Path) -> str | None:
     return load_settings(env_file, require_key=False).riot_api_key or None
 
 
-def build_client(settings: Settings, env_file: Path, **overrides) -> RiotHttpClient:
+def build_client(settings: Settings, env_file: Path, *, notify: bool = True, **overrides) -> RiotHttpClient:
     """`RiotHttpClient` configured from `settings`; the key is re-read from `env_file` on 401/403."""
     keys = KeyProvider(
         settings.riot_api_key,
         lambda: reload_key(env_file),
         poll_seconds=settings.key_poll_seconds,
+        notify=notify,
     )
     options = dict(
         probe_host=settings.regions[0],

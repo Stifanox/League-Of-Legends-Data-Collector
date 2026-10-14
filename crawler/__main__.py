@@ -8,7 +8,7 @@ import logging
 import sys
 from pathlib import Path
 
-from crawler.config import PLATFORM_TO_REGION, ConfigError, Settings, load_settings
+from crawler.config import CRAWL_MODES, PLATFORM_TO_REGION, ConfigError, Settings, load_settings
 from crawler.logging_setup import setup_logging
 
 log = logging.getLogger("crawler")
@@ -26,6 +26,11 @@ def build_parser() -> argparse.ArgumentParser:
     crawl.add_argument("--max-matches", type=int, metavar="N", help="stop after N new matches")
     crawl.add_argument("--duration", metavar="48h", help="stop after this long (e.g. 90m, 48h)")
     crawl.add_argument("--regions", metavar="eun1,...", help="override REGIONS for this run")
+    crawl.add_argument(
+        "--mode",
+        choices=CRAWL_MODES,
+        help="override CRAWL_MODE: full (matches + ranks), matches-only, ranks-only",
+    )
 
     export = sub.add_parser("export", help="write TSV/Parquet tables from raw data (no API calls)")
     export.add_argument("--formats", default="tsv,parquet", metavar="tsv,parquet", help="output formats")
@@ -179,6 +184,56 @@ async def _ping(settings: Settings, env_file: Path, platform: str) -> int:
     return 0
 
 
+def cmd_crawl(settings: Settings, args: argparse.Namespace) -> int:
+    from crawler.run import crawl, parse_duration
+
+    try:
+        duration = parse_duration(args.duration) if args.duration else None
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 2
+    platforms = None
+    if args.regions:
+        platforms = [p.strip().lower() for p in args.regions.split(",") if p.strip()]
+        if not platforms or not all(_known_platform(p) for p in platforms):
+            return 2
+    if args.max_matches is not None and args.max_matches < 1:
+        print("--max-matches must be >= 1", file=sys.stderr)
+        return 2
+    ctx = asyncio.run(
+        crawl(
+            settings,
+            args.env_file,
+            max_matches=args.max_matches,
+            duration=duration,
+            platforms=platforms,
+            mode=args.mode,
+        )
+    )
+    _print_run(ctx)
+    _print_state(settings)
+    return 0
+
+
+def cmd_retry_parked(settings: Settings, args: argparse.Namespace) -> int:
+    from crawler.run import retry_parked
+
+    if not (settings.data_dir / "state.db").exists():
+        print("Nothing to retry: no state.db yet")
+        return 0
+    ctx = asyncio.run(retry_parked(settings, args.env_file))
+    _print_run(ctx)
+    _print_state(settings)
+    return 0
+
+
+def _print_run(ctx) -> None:
+    print("\nThis run:")
+    for platform_id, s in sorted(ctx.stats.items()):
+        ranks = ", ".join(f"{k.lower()} {v}" for k, v in sorted(s.rank_status.items())) or "-"
+        print(f"  {platform_id}: {s.matches} matches, {s.timelines} timelines, {s.ranks} ranks ({ranks}), {s.parked} parked")
+
+
 def cmd_not_implemented(command: str) -> int:
     print(f"{command}: not implemented yet", file=sys.stderr)
     return 1
@@ -201,6 +256,10 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_status(settings, args)
     if args.command == "ddragon":
         return cmd_ddragon(settings, args.patch)
+    if args.command == "crawl":
+        return cmd_crawl(settings, args)
+    if args.command == "retry-parked":
+        return cmd_retry_parked(settings, args)
     return cmd_not_implemented(args.command)
 
 

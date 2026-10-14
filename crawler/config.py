@@ -13,6 +13,8 @@ from dotenv import dotenv_values
 from riot_client.routing import PLATFORM_TO_REGION  # re-exported for the CLI
 
 STRATEGIES = ("stratified", "snowball")
+# full: matches + ranks in parallel; matches-only: queue ranks for later; ranks-only: work off that queue.
+CRAWL_MODES = ("full", "matches-only", "ranks-only")
 
 # Variable name -> default value as it would appear in `.env`.
 DEFAULTS: dict[str, str] = {
@@ -23,6 +25,7 @@ DEFAULTS: dict[str, str] = {
     "SPLIT_RESET_DATE": "",
     "FETCH_TIMELINES": "true",
     "MATCHES_PER_PLAYER": "5",
+    "CRAWL_MODE": "full",
     "STRATEGY": "stratified",
     "SEED_RIOT_ID": "",
     "RANK_REUSE_HOURS": "6",
@@ -59,6 +62,7 @@ class Settings:
     split_reset_date: date | None
     fetch_timelines: bool
     matches_per_player: int
+    crawl_mode: str
     strategy: str
     seed_riot_id: str | None
     rank_reuse_hours: float
@@ -119,6 +123,10 @@ def load_settings(env_file: Path = Path(".env"), *, require_key: bool = True) ->
         problems.append(f"RIOT_API_KEY is not set (add it to {env_file} - see .env.example)")
 
     regions = parse.regions("REGIONS")
+    crawl_mode = raw["CRAWL_MODE"].lower()
+    if crawl_mode not in CRAWL_MODES:
+        problems.append(f"CRAWL_MODE must be one of {', '.join(CRAWL_MODES)}, got {crawl_mode!r}")
+
     strategy = raw["STRATEGY"].lower()
     if strategy not in STRATEGIES:
         problems.append(f"STRATEGY must be one of {', '.join(STRATEGIES)}, got {strategy!r}")
@@ -137,6 +145,7 @@ def load_settings(env_file: Path = Path(".env"), *, require_key: bool = True) ->
         split_reset_date=parse.optional_date("SPLIT_RESET_DATE"),
         fetch_timelines=parse.boolean("FETCH_TIMELINES"),
         matches_per_player=parse.number("MATCHES_PER_PLAYER", int, minimum=1, maximum=100),
+        crawl_mode=crawl_mode,
         strategy=strategy,
         seed_riot_id=seed_riot_id,
         rank_reuse_hours=parse.number("RANK_REUSE_HOURS", float, minimum=0),
