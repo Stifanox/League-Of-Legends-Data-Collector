@@ -1,0 +1,61 @@
+{
+ "tier": "CHALLENGER",
+ "queue": "RANKED_SOLO_5x5",
+ "entries": [
+  {
+   "puuid": "ReMFCkZFX5i0DqYXD_i7K_u4AaUNDPeQsqdeC1GA1py-pYDHw0omea01e13lXw-QiXOHChobw8uygg",
+   "leaguePoints": 4953,
+   "rank": "I",
+   "wins": 269,
+   "losses": 143,
+   "veteran": true,
+   "inactive": false,
+   "freshBlood": false,
+   "hotStreak": false
+  },
+  {
+   "puuid": "0joIDgJGoSSaxqUjADCuCjoRT7AB6Na-RCbxjQOsGxZ8v-9h4PS7dGKRS315ZpZMPRX__O6r669-5g",
+   "leaguePoints": 3797,
+   "rank": "I",
+   "wins": 531,
+   "losses": 403,
+   "veteran": true,
+   "inactive": false,
+   "freshBlood": false,
+   "hotStreak": false
+  },
+  {
+   "puuid": "5t9iN6GIDJXbYeCdcS85lYhDilzjLJxgBATj5TbLg7ytktY9yXPIqzhhyq_ox27uOieYLtkM7C0DYQ",
+   "leaguePoints": 3737,
+   "rank": "I",
+   "wins": 365,
+   "losses": 204,
+   "veteran": true,
+   "inactive": false,
+   "freshBlood": false,
+   "hotStreak": false
+  },
+  {
+   "puuid": "IZkBxNwNvQsCyC5LVmUTyXXs2jKknc3LHBKxzyz444FXchUYatNIyT-HRyrGfZi8uiOpu0Njqfs_SQ",
+   "leaguePoints": 3435,
+   "rank": "I",
+   "wins": 317,
+   "losses": 234,
+   "veteran": true,
+   "inactive": false,
+   "freshBlood": false,
+   "hotStreak": false
+  },
+  {
+   "puuid": "Rd7GoAPxOqbg8KiL7Z-U0q99yNDZFEfYdCBkxMXB2qFo_aWDis585FdKw--dhZF9XW8s0_Zm7egvlA",
+   "leaguePoints": 3397,
+   "rank": "I",
+   "wins": 313,
+   "losses": 237,
+   "veteran": true,
+   "inactive": false,
+   "freshBlood": false,
+   "hotStreak": false
+  }
+ ]
+}

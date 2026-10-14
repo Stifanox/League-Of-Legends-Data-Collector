@@ -10,24 +10,7 @@ from typing import Callable
 
 from dotenv import dotenv_values
 
-# Platform routing value -> regional routing value used by match-v5 / account-v1 (DESIGN §5).
-PLATFORM_TO_REGION: dict[str, str] = {
-    "eun1": "europe",
-    "euw1": "europe",
-    "tr1": "europe",
-    "ru": "europe",
-    "me1": "europe",
-    "na1": "americas",
-    "br1": "americas",
-    "la1": "americas",
-    "la2": "americas",
-    "kr": "asia",
-    "jp1": "asia",
-    "oc1": "sea",
-    "sg2": "sea",
-    "tw2": "sea",
-    "vn2": "sea",
-}
+from riot_client.routing import PLATFORM_TO_REGION  # re-exported for the CLI
 
 STRATEGIES = ("stratified", "snowball")
 

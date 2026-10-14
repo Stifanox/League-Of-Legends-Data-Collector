@@ -1,0 +1,67 @@
+[
+ {
+  "queueType": "RANKED_SOLO_5x5",
+  "tier": "GOLD",
+  "rank": "II",
+  "puuid": "BrWADqlC-tZxbYWkiNjkhfrj4OeVFH6eXbC7QHUktWXSnBtugz6oPngLcMPPBP2GizbHfxMB5yZF4g",
+  "leaguePoints": 49,
+  "wins": 162,
+  "losses": 172,
+  "veteran": false,
+  "inactive": false,
+  "freshBlood": false,
+  "hotStreak": false
+ },
+ {
+  "queueType": "RANKED_SOLO_5x5",
+  "tier": "GOLD",
+  "rank": "II",
+  "puuid": "EE2l4hxxkF2Ra1k6PuGuYX7CQGAqYJAcU6-mLsAXdVauEqKhnZRS2Boj2kiZsObV04i1hL1Eg58zzw",
+  "leaguePoints": 28,
+  "wins": 56,
+  "losses": 55,
+  "veteran": false,
+  "inactive": false,
+  "freshBlood": false,
+  "hotStreak": false
+ },
+ {
+  "queueType": "RANKED_SOLO_5x5",
+  "tier": "GOLD",
+  "rank": "II",
+  "puuid": "IREVH88dc-aWYLDW8OQoDetxhxGe9x6RcS_SUyglPQhBpvnwS3LHbBe4udg1uPUXAoh5BJDM-ZCwVw",
+  "leaguePoints": 85,
+  "wins": 4,
+  "losses": 2,
+  "veteran": false,
+  "inactive": false,
+  "freshBlood": false,
+  "hotStreak": true
+ },
+ {
+  "queueType": "RANKED_SOLO_5x5",
+  "tier": "GOLD",
+  "rank": "II",
+  "puuid": "Fn3BdhUOe9bhn9SxCQ8sc39K3_xofEzR-D7OSuf8fk4cxgl9qksY8xTL-sEYQxf49urbpxlgz7fx7Q",
+  "leaguePoints": 12,
+  "wins": 18,
+  "losses": 14,
+  "veteran": false,
+  "inactive": false,
+  "freshBlood": false,
+  "hotStreak": false
+ },
+ {
+  "queueType": "RANKED_SOLO_5x5",
+  "tier": "GOLD",
+  "rank": "II",
+  "puuid": "d-kRbg7i1obmp7eiQyj5wE719xuRaOgoaMHHOXqV5iyyrBCYiNV3IBwHHM0HPwWfA4hoy0qHlBv5nw",
+  "leaguePoints": 87,
+  "wins": 66,
+  "losses": 62,
+  "veteran": false,
+  "inactive": false,
+  "freshBlood": false,
+  "hotStreak": false
+ }
+]

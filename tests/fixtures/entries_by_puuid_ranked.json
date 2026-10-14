@@ -1,0 +1,41 @@
+[
+ {
+  "queueType": "RANKED_FLEX_SR",
+  "tier": "MASTER",
+  "rank": "I",
+  "puuid": "Z94mMW94j74vkhElW9tScBw7T3P5cUVAevEon4_of7QAmD3kAwhfQuqDT9dgj1XVguUQFTI96wVOpQ",
+  "leaguePoints": 835,
+  "wins": 63,
+  "losses": 49,
+  "veteran": false,
+  "inactive": false,
+  "freshBlood": false,
+  "hotStreak": false
+ },
+ {
+  "queueType": "RANKED_PREMADE_5x5",
+  "tier": "MASTER",
+  "rank": "I",
+  "puuid": "Z94mMW94j74vkhElW9tScBw7T3P5cUVAevEon4_of7QAmD3kAwhfQuqDT9dgj1XVguUQFTI96wVOpQ",
+  "leaguePoints": 69,
+  "wins": 36,
+  "losses": 24,
+  "veteran": false,
+  "inactive": false,
+  "freshBlood": false,
+  "hotStreak": false
+ },
+ {
+  "queueType": "RANKED_SOLO_5x5",
+  "tier": "CHALLENGER",
+  "rank": "I",
+  "puuid": "Z94mMW94j74vkhElW9tScBw7T3P5cUVAevEon4_of7QAmD3kAwhfQuqDT9dgj1XVguUQFTI96wVOpQ",
+  "leaguePoints": 2990,
+  "wins": 201,
+  "losses": 123,
+  "veteran": true,
+  "inactive": false,
+  "freshBlood": false,
+  "hotStreak": false
+ }
+]
