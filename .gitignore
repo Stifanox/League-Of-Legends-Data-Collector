@@ -1,0 +1,15 @@
+# Secrets
+.env
+
+# Crawler output
+data/
+logs/
+*.db
+*.db-wal
+*.db-shm
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
