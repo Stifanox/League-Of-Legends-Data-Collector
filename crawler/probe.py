@@ -100,3 +100,40 @@ def _show(label: str, data: Any, detail: str) -> None:
 
 def format_windows(windows: list[tuple[int, int, int]]) -> str:
     return ", ".join(f"{count}/{limit} per {seconds}s" for count, limit, seconds in windows) or "-"
+
+
+async def persist_sample(settings: Settings, env_file: Path, platform: str, count: int) -> None:
+    """Fetch `count` CHALLENGER matches (+ timelines, + one rank) and store them like the crawler will."""
+    from crawler.storage import Storage
+    from riot_client.routing import platform_id as to_platform_id
+
+    region = region_of(platform)
+    pid = to_platform_id(platform)
+    end = int(time.time())
+    start = end - settings.window_days * 86400
+    stored = 0
+    with Storage(settings.data_dir, roll_mb=settings.raw_roll_mb) as storage:
+        storage.state.tiers.ensure(pid)
+        async with build_client(settings, env_file, probe_host=platform) as client:
+            puuids = league.league_puuids(await league.apex_league(client, platform, "CHALLENGER"))
+            for puuid in puuids:
+                if stored >= count:
+                    break
+                ids = await match.match_ids_by_puuid(
+                    client, region, puuid, queue=SOLO_QUEUE_ID, start_time=start, end_time=end, count=count - stored
+                )
+                new = storage.state.matches.enqueue(
+                    pid, ids, seed_tier="CHALLENGER", seed_puuid=puuid, strategy="sample"
+                )
+                for match_id in new:
+                    data = await match.match(client, region, match_id)
+                    storage.persist_match(pid, match_id, data, seed_tier="CHALLENGER", seed_puuid=puuid, strategy="sample")
+                    if settings.fetch_timelines:
+                        storage.persist_timeline(pid, match_id, await match.timeline(client, region, match_id))
+                    storage.state.finish_match(match_id)
+                    stored += 1
+                    print(f"  stored {match_id}")
+                if new and stored == len(new):  # first player with matches: also store one rank
+                    status = storage.persist_rank(pid, puuid, await league.entries_by_puuid(client, platform, puuid))
+                    print(f"  stored rank of seed player: {status}")
+    print(f"\nStored {stored} match(es) under {settings.data_dir / 'raw'}")

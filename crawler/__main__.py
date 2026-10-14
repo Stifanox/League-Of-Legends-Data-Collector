@@ -52,6 +52,12 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="DIR",
         help="with --probe: save the responses as test fixtures into DIR",
     )
+    status.add_argument(
+        "--persist",
+        type=int,
+        metavar="N",
+        help="with --probe: also store N matches (+ timelines, + one rank) in DATA_DIR like a crawl",
+    )
 
     ddragon = sub.add_parser("ddragon", help="download Data Dragon static data")
     ddragon.add_argument("--patch", metavar="X.Y", help="patch to download (default: latest)")
@@ -64,6 +70,7 @@ def cmd_status(settings: Settings, args: argparse.Namespace) -> int:
     for name, value in settings.describe():
         print(f"  {name:<{width}}  {value}")
     log.debug("status: settings loaded, key %s", settings.masked_key)
+    _print_state(settings)
     if args.ping is not None:
         return asyncio.run(_ping(settings, args.env_file, args.ping or settings.regions[0]))
     if args.probe is not None:
@@ -77,10 +84,46 @@ def cmd_status(settings: Settings, args: argparse.Namespace) -> int:
         print(f"\nProbing {platform}:")
         try:
             asyncio.run(probe(settings, args.env_file, platform, args.save_fixtures))
+            if args.persist:
+                from crawler.probe import persist_sample
+
+                print(f"\nStoring {args.persist} sample match(es):")
+                asyncio.run(persist_sample(settings, args.env_file, platform, args.persist))
+                _print_state(settings)
         except RiotApiError as exc:
             print(f"\nProbe failed: {exc}", file=sys.stderr)
             return 1
     return 0
+
+
+def _print_state(settings: Settings) -> None:
+    from crawler.shutdown import free_gb
+    from crawler.state import StateStore
+
+    print(f"\nDisk: {free_gb(settings.data_dir):.1f} GiB free (minimum {settings.min_free_disk_gb:g})")
+    db_path = settings.data_dir / "state.db"
+    if not db_path.exists():
+        print(f"State: no {db_path} yet")
+        return
+    with StateStore(db_path) as state:
+        summary = state.summary()
+        last_key_error = state.meta.get("last_key_error")
+    print(f"State ({db_path}):")
+    for platform_id, s in summary["platforms"].items():
+        print(
+            f"  {platform_id}: matches {s['matches_done']} done / {s['matches_queued']} queued / "
+            f"{s['matches_parked']} parked, timelines {s['timelines_done']}, "
+            f"ranks {s['rank_lookups']} (+{s['rank_queue']} queued), "
+            f"players {s['players_visited']}/{s['players']} visited"
+        )
+        tiers = [f"{t.tier} {t.collected}{'(x)' if t.exhausted else ''}" for t in s["tiers"] if
+                 t.collected or t.exhausted]
+        if tiers:
+            print("    tiers: " + ", ".join(tiers))
+    parked = summary["parked"]
+    print("  parked: " + (", ".join(f"{kind} {n}" for kind, n in sorted(parked.items())) if parked else "none"))
+    if last_key_error:
+        print(f"  last key error: {last_key_error}")
 
 
 def _known_platform(platform: str) -> bool:
