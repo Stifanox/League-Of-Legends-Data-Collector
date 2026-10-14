@@ -201,6 +201,14 @@ Tables:
 | `ranks` | 1 / lookup | puuid, platform_id, fetched_at, rank_status, tier, division, lp, wins, losses |
 | `dim_champions`, `dim_items`, `dim_summoner_spells`, `dim_runes` | per patch | id, name, tags/cost/stats as available |
 
+Format details (implemented in phase 5):
+- `platform_id` is a **column in TSV** files but **not inside Parquet** files: in Parquet it is only the Hive folder `platform_id=EUN1`, which Spark, pyarrow and pandas turn back into a column when reading the table directory (pyarrow refuses a directory whose files also contain the partition column). A single Parquet file read on its own has no `platform_id`; the match id prefix carries it.
+- Timestamps (`game_start`, `game_end`, `fetched_at`, `rank_fetched_at`, …): Parquet `timestamp[ms, UTC]`, TSV ISO-8601 `2026-10-05T12:17:53.297Z`.
+- Lists (`bans`, `assisting_participant_ids`, `tags`, …): Parquet list columns, TSV comma-joined.
+- Parquet: snappy compression, row groups of 50k rows, new file every 10M rows. TSV: header in every part, rolled at ~128 MB.
+- Dimension tables (`dim_*`) are not partitioned: `<table>/part-0001.*`, one row per id per Data Dragon version (`ddragon_version`, `patch` columns).
+- Nested timeline data that is not flattened (per-kill damage breakdowns `victimDamageDealt/Received`) stays available in the raw files.
+
 Derived values:
 - `patch` = major.minor of `info.gameVersion` (e.g. `15.19.715.1234 → 15.19`).
 - Rank for a participant of a match: the lookup for that `puuid` with the smallest `fetched_at ≥ gameEndTimestamp`; if none, the latest before it; none at all → `NOT_FETCHED`. `rank_lag_hours = (fetched_at − gameEnd) / 3600`.

@@ -234,9 +234,49 @@ def _print_run(ctx) -> None:
         print(f"  {platform_id}: {s.matches} matches, {s.timelines} timelines, {s.ranks} ranks ({ranks}), {s.parked} parked")
 
 
-def cmd_not_implemented(command: str) -> int:
-    print(f"{command}: not implemented yet", file=sys.stderr)
-    return 1
+def cmd_export(settings: Settings, args: argparse.Namespace) -> int:
+    from crawler.export.run import export
+    from crawler.export.schemas import TABLES
+    from crawler.export.writers import FORMATS
+
+    formats = tuple(_split(args.formats))
+    tables = tuple(_split(args.tables)) if args.tables else None
+    platforms = tuple(p.upper() for p in _split(args.platforms)) if args.platforms else None
+    bad = [f for f in formats if f not in FORMATS] + [t for t in tables or () if t not in TABLES]
+    if bad or not formats:
+        print(f"Unknown format/table {bad}; formats: {', '.join(FORMATS)}; tables: {', '.join(TABLES)}", file=sys.stderr)
+        return 2
+    if not (settings.data_dir / "raw").is_dir():
+        print(f"Nothing to export: no {settings.data_dir / 'raw'}", file=sys.stderr)
+        return 1
+    summary = export(settings.data_dir, formats=formats, tables=tables, platforms=platforms)
+    _print_export(settings, summary, formats)
+    return 0
+
+
+def _split(text: str | None) -> list[str]:
+    return [part.strip() for part in (text or "").split(",") if part.strip()]
+
+
+def _print_export(settings: Settings, summary, formats: tuple[str, ...]) -> None:
+    print(f"\nExported to {settings.data_dir / 'export'} ({', '.join(formats)}):")
+    by_table: dict[str, list[str]] = {}
+    for (table, platform_id), rows in sorted(summary.rows.items(), key=lambda kv: (kv[0][0], kv[0][1] or "")):
+        by_table.setdefault(table, []).append(f"{platform_id or 'all'} {rows}")
+    for table, counts in by_table.items():
+        print(f"  {table}: {', '.join(counts)}")
+    print(f"Matches: {summary.matches} (duplicates skipped: {summary.duplicate_matches})")
+    if summary.matches_without_timeline is not None:
+        print(f"Timelines: {summary.timelines} (matches without timeline: {summary.matches_without_timeline})")
+    if summary.rank_status:
+        print("Participant rank_status: " + ", ".join(f"{k} {v}" for k, v in sorted(summary.rank_status.items())))
+    lags = summary.lag_percentiles()
+    if lags:
+        print("rank_lag_hours: " + ", ".join(f"{k} {v:.2f}" for k, v in lags.items()))
+    print("Patches: " + (", ".join(f"{k} {v}" for k, v in sorted(summary.patches.items(), key=lambda kv: kv[0] or "")) or "-"))
+    if summary.patches_without_ddragon:
+        missing = ", ".join(summary.patches_without_ddragon)
+        print(f"Missing Data Dragon for patch(es) {missing}: python -m crawler ddragon --patch <X.Y>")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -260,7 +300,9 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_crawl(settings, args)
     if args.command == "retry-parked":
         return cmd_retry_parked(settings, args)
-    return cmd_not_implemented(args.command)
+    if args.command == "export":
+        return cmd_export(settings, args)
+    raise AssertionError(f"unhandled command {args.command}")  # argparse only allows the commands above
 
 
 if __name__ == "__main__":
