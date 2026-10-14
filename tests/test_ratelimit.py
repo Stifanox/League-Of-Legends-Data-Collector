@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import httpx
 import pytest
 
@@ -38,7 +40,7 @@ def test_21st_request_in_one_second_waits():
 
     times = run(scenario())
     assert times[:20] == [0.0] * 20
-    assert times[20] == pytest.approx(1.0)
+    assert times[20] == pytest.approx(1.1)  # 1 s window + 0.1 s margin
 
 
 def test_101st_request_in_120_seconds_waits():
@@ -47,8 +49,8 @@ def test_101st_request_in_120_seconds_waits():
         return await times_of(limiter, 101)
 
     times = run(scenario())
-    assert times[99] == pytest.approx(4.0)  # 5 bursts of 20 per second
-    assert times[100] == pytest.approx(120.0)
+    assert times[99] == pytest.approx(4.4)  # 5 bursts of 20, one per 1.1 s window
+    assert times[100] == pytest.approx(121.0)  # 120 s window + 1 s margin
 
 
 def test_safety_factor_lowers_effective_limit():
@@ -58,7 +60,7 @@ def test_safety_factor_lowers_effective_limit():
 
     times = run(scenario())
     assert times[17] == 0.0
-    assert times[18] == pytest.approx(1.0)
+    assert times[18] == pytest.approx(1.1)
 
 
 def test_count_resync_takes_server_maximum():
@@ -74,7 +76,48 @@ def test_count_resync_takes_server_maximum():
 
     app, waited_until = run(scenario())
     assert app == [(20, 20, 1), (60, 100, 120)]
-    assert waited_until == pytest.approx(1.0)
+    assert waited_until == pytest.approx(1.1)
+
+
+def test_window_margin():
+    assert (RateWindow(20, 1).margin, RateWindow(50, 10).margin, RateWindow(100, 120).margin) == (0.1, 1.0, 1.0)
+
+
+def test_stale_count_from_riots_previous_window_is_ignored():
+    """Regression: Riot's window ends a moment after ours. The first response in our new window
+    still reports Riot's old count; adopting it used to block the host for another full window."""
+
+    async def scenario():
+        limiter = HostLimiter("asia", safety=0.9)
+        limiter.update_from_headers("m", httpx.Headers({"X-App-Rate-Limit": "20:1,100:120"}))
+        for _ in range(90):  # a full window's worth (safety 0.9)
+            await limiter.acquire("m")
+        await limiter.acquire("m")  # waits for our window to end (121 s)
+        first_of_new_window = now()
+        await asyncio.sleep(0.3)  # response latency; Riot's window has not reset yet
+        limiter.update_from_headers("m", httpx.Headers({"X-App-Rate-Limit-Count": "1:1,91:120"}))
+        times = []
+        for _ in range(10):
+            await limiter.acquire("m")
+            times.append(now())
+        return first_of_new_window, times
+
+    first, times = run(scenario())
+    assert first == pytest.approx(121.0)
+    assert times[-1] < first + 5  # keeps sending instead of waiting another 121 s
+
+
+def test_high_count_in_a_mature_window_is_still_adopted():
+    async def scenario():
+        limiter = HostLimiter("asia", safety=1.0)
+        for _ in range(3):
+            await limiter.acquire("m")
+        await asyncio.sleep(30)  # well inside the window: the count is current, e.g. a shared key
+        limiter.update_from_headers("m", httpx.Headers({"X-App-Rate-Limit-Count": "3:1,100:120"}))
+        await limiter.acquire("m")
+        return now()
+
+    assert run(scenario()) == pytest.approx(121.0)
 
 
 def test_lower_server_count_does_not_reduce_local_count():
@@ -111,8 +154,8 @@ def test_method_window_is_independent_of_app_window():
         return slow, fast
 
     slow, fast = run(scenario())
-    assert slow == [0.0, pytest.approx(10.0)]
-    assert fast == [pytest.approx(10.0)] * 3  # only limited by the app window, not "slow"
+    assert slow == [0.0, pytest.approx(11.0)]  # 10 s window + 1 s margin
+    assert fast == [pytest.approx(11.0)] * 3  # only limited by the app window, not "slow"
 
 
 def test_other_method_not_delayed_by_method_limit():

@@ -4,6 +4,12 @@ Riot reports limits and current counts (`X-App-Rate-Limit`, `X-App-Rate-Limit-Co
 `X-Method-Rate-Limit`, `X-Method-Rate-Limit-Count`, format `"20:1,100:120"`) but no reset
 time, so each window tracks its own start locally and re-syncs its count from the headers.
 Time comes from the running event loop, which lets tests use a virtual clock.
+
+Riot's window starts when *its* server sees the first request, a little after our clock
+does. To avoid sending into the tail of Riot's previous window, each local window is padded
+by a small margin, and a high count reported right after our window rolled over is treated
+as a leftover from Riot's previous window instead of filling the new one (that mistake
+used to waste every other window).
 """
 
 from __future__ import annotations
@@ -17,6 +23,13 @@ DEFAULT_APP_LIMITS = "20:1,100:120"
 
 # Tolerance for float rounding when comparing window boundaries.
 _EPSILON = 1e-6
+
+# Local windows last `seconds + margin`, margin = min(MAX, RATIO * seconds): 1 s for 10 s+ windows.
+WINDOW_MARGIN_MAX = 1.0
+WINDOW_MARGIN_RATIO = 0.1
+# Counts arriving this soon after our window rolled over may still describe Riot's old window.
+STALE_COUNT_GRACE_MAX = 2.0
+STALE_COUNT_GRACE_RATIO = 0.25
 
 
 def parse_limits(value: str | None) -> list[tuple[int, int]]:
@@ -45,11 +58,19 @@ class RateWindow:
     def __init__(self, limit: int, seconds: int) -> None:
         self.limit = limit
         self.seconds = seconds
+        self.margin = min(WINDOW_MARGIN_MAX, WINDOW_MARGIN_RATIO * seconds)
+        self.stale_grace = min(STALE_COUNT_GRACE_MAX, STALE_COUNT_GRACE_RATIO * seconds)
         self.start: float | None = None
         self.count = 0
+        self.previous_end: float | None = None
+
+    @property
+    def end(self) -> float | None:
+        return None if self.start is None else self.start + self.seconds + self.margin
 
     def _roll(self, now: float) -> None:
-        if self.start is not None and now >= self.start + self.seconds - _EPSILON:
+        if self.start is not None and now >= self.end - _EPSILON:
+            self.previous_end = self.end
             self.start = None
             self.count = 0
 
@@ -61,7 +82,7 @@ class RateWindow:
         self._roll(now)
         if self.count < self.capacity(safety) or self.start is None:
             return 0.0
-        return max(0.0, self.start + self.seconds - now)
+        return max(0.0, self.end - now)
 
     def record(self, now: float) -> None:
         self._roll(now)
@@ -70,16 +91,25 @@ class RateWindow:
         self.count += 1
 
     def sync(self, server_count: int, now: float) -> None:
-        """Take the server's count if it is higher than ours."""
+        """Take the server's count if it is higher than ours.
+
+        Ignored shortly after our window rolled over: then a high count most likely belongs to
+        Riot's previous window, which ends a moment after ours. If Riot's window really is full
+        (e.g. the key is shared), the next request gets a 429 with `Retry-After`.
+        """
         self._roll(now)
-        if server_count > self.count:
-            self.count = server_count
-            if self.start is None:
-                self.start = now
+        if server_count <= self.count:
+            return
+        if self.previous_end is not None and now - self.previous_end < self.stale_grace:
+            return
+        self.count = server_count
+        if self.start is None:
+            self.start = now
 
     def reset(self) -> None:
         self.start = None
         self.count = 0
+        self.previous_end = None
 
 
 class WindowSet:

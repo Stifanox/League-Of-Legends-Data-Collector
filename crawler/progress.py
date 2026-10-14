@@ -49,7 +49,12 @@ class Progress:
 
     async def run(self, *, tty: bool | None = None) -> None:
         tty = sys.stdout.isatty() if tty is None else tty
-        bar_cm = alive_bar(self.ctx.max_matches, title=self.counts, dual_line=True) if tty else nullcontext()
+        # enrich_print=False: otherwise alive-progress prefixes every log line (also in the log file) with "on N:".
+        bar_cm = (
+            alive_bar(self.ctx.max_matches, title=self.counts, dual_line=True, enrich_print=False)
+            if tty
+            else nullcontext()
+        )
         loop = asyncio.get_running_loop()
         next_log = next_tiers = loop.time()
         shown = 0
