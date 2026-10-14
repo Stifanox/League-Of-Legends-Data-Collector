@@ -19,6 +19,7 @@ from tests.conftest import FIXTURES_DIR
 
 PAGE_SIZE = 3
 _MATCH_TEMPLATE = json.loads((FIXTURES_DIR / "match.json").read_text(encoding="utf-8"))
+_TIMELINE_TEMPLATE: dict | None = None  # loaded on first use (1 MB)
 _APEX_PATHS = {"challengerleagues": "CHALLENGER", "grandmasterleagues": "GRANDMASTER", "masterleagues": "MASTER"}
 
 
@@ -30,7 +31,10 @@ class FakeRiot:
         platforms: tuple[str, ...] = ("EUN1",),
         players_per_tier: int | dict[str, int] = 4,
         matches_per_player: int = 12,
+        real_timelines: bool = False,
     ) -> None:
+        """`real_timelines`: serve copies of the fixture timeline instead of empty ones."""
+        self.real_timelines = real_timelines
         self.valid_keys = {key}
         self.requests: list[httpx.Request] = []
         self.paths = Counter()
@@ -95,8 +99,7 @@ class FakeRiot:
             start, count = int(params.get("start", 0)), int(params.get("count", 20))
             return httpx.Response(200, json=history[start : start + count])
         if m := re.fullmatch(r"/lol/match/v5/matches/([^/]+)/timeline", path):
-            meta = {"matchId": m[1], "participants": self.participants(m[1])}
-            return httpx.Response(200, json={"metadata": meta, "info": {"frames": []}})
+            return httpx.Response(200, json=self._timeline(m[1]))
         if m := re.fullmatch(r"/lol/match/v5/matches/([^/]+)", path):
             return httpx.Response(200, json=self._match(m[1]))
         if m := re.fullmatch(r"/riot/account/v1/accounts/by-riot-id/([^/]+)/([^/]+)", path):
@@ -120,6 +123,19 @@ class FakeRiot:
             "wins": 10,
             "losses": 9,
         }
+
+    def _timeline(self, match_id: str) -> dict:
+        participants = self.participants(match_id)
+        meta = {"dataVersion": "2", "matchId": match_id, "participants": participants}
+        if not self.real_timelines:
+            return {"metadata": meta, "info": {"frames": []}}
+        global _TIMELINE_TEMPLATE
+        if _TIMELINE_TEMPLATE is None:
+            _TIMELINE_TEMPLATE = json.loads((FIXTURES_DIR / "timeline.json").read_text(encoding="utf-8"))
+        data = copy.deepcopy(_TIMELINE_TEMPLATE)
+        data["metadata"] = meta
+        data["info"]["participants"] = [{"participantId": i + 1, "puuid": p} for i, p in enumerate(participants)]
+        return data
 
     def _match(self, match_id: str) -> dict:
         data = copy.deepcopy(_MATCH_TEMPLATE)
